@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System;
 using UnityEngine.UI;
 using UnityEngine.TextCore;
@@ -18,6 +18,7 @@ public class AddFunds : MonoBehaviour
     private ApplicationLauncherButton toolbarButton;
     private float x = 100f;
     private float y = 100f;
+
     public void Destroy()
     {
         if (toolbarButton != null)
@@ -26,6 +27,7 @@ public class AddFunds : MonoBehaviour
             toolbarButton = null;
         }
     }
+
     private void Start()
     {
         // Load the icon image file
@@ -41,6 +43,7 @@ public class AddFunds : MonoBehaviour
             null,
             ApplicationLauncher.AppScenes.ALWAYS,
             buttonIcon);
+
         // Load the saved position of the window
         if (PlayerPrefs.HasKey("windowX"))
         {
@@ -79,7 +82,6 @@ public class AddFunds : MonoBehaviour
         }
     }
 
-
     private void ShowWindow()
     {
         showWindow = true;
@@ -103,44 +105,59 @@ public class AddFunds : MonoBehaviour
         }
     }
 
-private void WindowFunction(int windowID)
-{
-    // Add the close button in the top left corner
-    if (GUI.Button(new Rect(windowRect.width - 25, 5, 20, 20), "x"))
+    private void WindowFunction(int windowID)
     {
-        HideWindow();
-    }
+        // Add the close button in the top left corner
+        if (GUI.Button(new Rect(windowRect.width - 25, 5, 20, 20), "x"))
+        {
+            HideWindow();
+        }
 
         // Draw the input field and the submit button
         inputString = GUI.TextField(new Rect(10, 60, 180, 20), inputString);
 
-        if (isAddingFunds) {
+        if (isAddingFunds)
+        {
             if (GUI.Button(new Rect(60, 100, 80, 30), "Add Funds"))
             {
                 int fundsToAdd;
                 if (int.TryParse(inputString, out fundsToAdd))
                 {
-                    // Add the funds to the player's account
-                    Funding.Instance.AddFunds(fundsToAdd, TransactionReasons.None);
-                    Debug.Log(fundsToAdd+"Funds added");
+                    if (Funding.Instance != null)
+                    {
+                        Funding.Instance.AddFunds(fundsToAdd, TransactionReasons.Cheating);
+                        Debug.Log("[KerbalFunds] " + fundsToAdd + " Funds added");
+                    }
                 }
-                
-                // Close the window
+
                 inputString = "1000";
             }
         }
-        else {
+        else
+        {
             if (GUI.Button(new Rect(60, 100, 80, 30), "Research"))
             {
-                int scienceToAdd;
-                if (int.TryParse(inputString, out scienceToAdd))
+                float scienceToAdd;
+                if (float.TryParse(inputString, out scienceToAdd))
                 {
-                    // Add the science to the player's account
-                    ResearchAndDevelopment.Instance.AddScience(scienceToAdd, TransactionReasons.None);
-                    Debug.Log(scienceToAdd + "Research points added");
+                    // Primary check: R&D Instance
+                    if (ResearchAndDevelopment.Instance != null)
+                    {
+                        ResearchAndDevelopment.Instance.AddScience(scienceToAdd, TransactionReasons.Cheating);
+                        Debug.Log("[KerbalFunds] " + scienceToAdd + " Research points added via Instance.");
+                    }
+                    // Fallback check: ResearchAndDevelopment global subject/score host
+                    else if (AssetBase.ResearchAndDevelopment != null)
+                    {
+                        ResearchAndDevelopment.AddScience(scienceToAdd, TransactionReasons.Cheating);
+                        Debug.Log("[KerbalFunds] " + scienceToAdd + " Research points added via Static method.");
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[KerbalFunds] Could not add science: ResearchAndDevelopment is not active or game mode does not support science.");
+                    }
                 }
 
-                // Close the window
                 inputString = "10";
             }
         }
@@ -150,8 +167,8 @@ private void WindowFunction(int windowID)
         {
             isAddingFunds = !isAddingFunds;
         }
+
         // Make the window draggable
         GUI.DragWindow();
-
     }
 }
